@@ -7,18 +7,19 @@ from const import *
 
 
 house_id = 1
+TESTING = True
 
 
 def load_truth_dataframe(house_id):
     ''' load the truth dataframe from file.
-    The main column is the aggregate building energy.
+    The Main column is the aggregate building energy.
     '''
     # load truth data
     house_data = pd.read_csv(os.path.join(REDD_DIR, 'building_{0}.csv'.format(house_id)))
     house_data = house_data.set_index(pd.DatetimeIndex(house_data['time'])).drop('time', axis=1)
 
     devices = house_data.columns.values
-    devices = devices[devices != 'main']
+    devices = devices[devices != 'Main']
 
     return house_data, devices
 
@@ -29,7 +30,7 @@ def load_predicted_dataframe(house_id):
     return a dataframe of predictions for each appliance.
 
     should have the same number of rows as the truth dataframe, and a column for
-    each appliance like in the truth dataframe. the 'main' column in the truth,
+    each appliance like in the truth dataframe. the 'Main' column in the truth,
     representing the aggregate building energy series, does not have to be present.
 
     '''
@@ -48,9 +49,10 @@ def load_data(restriction='time'):
     pred_data = load_predicted_dataframe(house_id)
 
 
-    # without real predictions I test on fake predictions
-    fake_predictions = truth_data + truth_data * 0.3 + 20 * np.random.randn(*truth_data.shape, )
-    pred_data = fake_predictions
+    if TESTING:
+        # without real predictions I test on fake predictions
+        fake_predictions = truth_data + truth_data * 0.7 + 40 * np.random.randn(*truth_data.shape)
+        pred_data = fake_predictions
 
 
     # subset to evaluation period
@@ -80,7 +82,7 @@ def ts_plot(eval_truth, eval_pred, devices):
 
     fig, ax = plt.subplots(len(devices) + 1, 1, sharex=True)
 
-    ma = ax[0].plot_date(x=eval_truth.index.values, y=eval_truth['main'].values,
+    ma = ax[0].plot_date(x=eval_truth.index.values, y=eval_truth['Main'].values,
                             color='k', linewidth=1, fmt='-')
     ax[0].set_ylabel('Total energy')
     ax[0].set_title('Building {0}'.format(house_id))
@@ -99,7 +101,9 @@ def ts_plot(eval_truth, eval_pred, devices):
 
     ax[0].legend(handles=[tr,pr])
 
-    plt.show()
+    fig.align_ylabels(ax)
+
+    return fig
 
 
 
@@ -107,12 +111,12 @@ def piechart(eval_truth, eval_pred, devices):
 
     # drop main column if it exists
     try:
-        eval_truth = eval_truth.drop('main', axis=1)
-    except KeyError:
+        eval_truth = eval_truth.drop('Main', axis=1)
+    except ValueError:
         pass
     try:
-        eval_pred = eval_pred.drop('main', axis=1)
-    except KeyError:
+        eval_pred = eval_pred.drop('Main', axis=1)
+    except ValueError:
         pass
 
 
@@ -147,7 +151,7 @@ def piechart(eval_truth, eval_pred, devices):
 
     # pie.set_size_inches(4.5, 8)
     # pie.savefig('pie1.png', dpi=300)
-    plt.show()
+    return pie
 
 
 
@@ -155,7 +159,9 @@ def piechart(eval_truth, eval_pred, devices):
 if __name__ == '__main__':
 
     eval_truth, eval_pred, devices = load_data(restriction='time')
-    # ts_plot(eval_truth, eval_pred, devices)
+    f1 = ts_plot(eval_truth, eval_pred, devices)
+    plt.show()
 
     eval_truth, eval_pred, devices = load_data(restriction=None)
-    piechart(eval_truth, eval_pred, devices)
+    f2 = piechart(eval_truth, eval_pred, devices)
+    plt.show()

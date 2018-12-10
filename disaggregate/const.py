@@ -17,7 +17,11 @@ elif sys.platform == 'darwin':
     pass
 
 
-LEARN_TYPES = ['light','fridge','washer dryer','dish washer','electric oven',
-                'sockets','air conditioning','electric furnace']
+# number of top devices to extract for each building in prepare_datasets.py
+N_DEV = 6
+
+# time series aggregation window (300 s = 5 min)
 SAMPLE_PERIOD = 300
+
+# cutoff day between training period and test period
 TRAIN_END = '2011-05-12'
