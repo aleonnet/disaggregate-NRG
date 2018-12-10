@@ -2,13 +2,14 @@ import os
 import pandas as pd
 import numpy as np
 
+import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import ElasticNetCV
 from sklearn.linear_model import MultiTaskElasticNetCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 
-
+from visualize_time_series import ts_plot, piechart
 from const import REDD_DIR, TRAIN_END
 
 
@@ -22,11 +23,24 @@ class RegressionModeler(object):
         self.train_targets = None
         self.test_targets = None
         self.apps = None
+        self.index = None
+        self.truth = None
 
-    def prepare_train_test_sets(self):
+    def prepare_train_test_sets(self, targ):
+        AR_terms = self.AR_terms
 
-        house_data = pd.read_csv(os.path.join(REDD_DIR, 'building_{0}.csv'.format(house_id)))
+        house_data = pd.read_csv(os.path.join(REDD_DIR, 'building_{0}.csv'.format(self.house_id)))
         house_data = house_data.set_index(pd.DatetimeIndex(house_data['time'])).drop('time', axis=1)
+
+
+
+        if targ == 'aggregate':
+            # print(house_data.head())
+            house_data = house_data.drop('Main', axis=1)
+            house_data['Main'] = np.sum(house_data.values, axis=1)
+            # print(house_data.head())
+        elif targ == 'mains':
+            pass
 
         apps = house_data.columns.values
         apps = apps[apps != 'Main']
@@ -52,6 +66,8 @@ class RegressionModeler(object):
         X_test.columns = ['Main'] + ['AR{0}'.format(x) for x in range(1, AR_terms+1)]
         X_test = X_test[AR_terms:]
 
+        self.index = test_data.index[AR_terms:]
+        self.truth = test_data.iloc[AR_terms:,:]
 
         # construct target variables. Because of autoregression 'cost', must throw
         # out AR_terms rows of the data
@@ -71,6 +87,7 @@ class RegressionModeler(object):
 
         ### Prediction ###
         app_scores = []
+        total_preds = []
         for target_app in self.apps:
 
             y_train = self.train_targets[target_app].values
@@ -80,22 +97,23 @@ class RegressionModeler(object):
 
             preds = model.predict(self.X_test)
             app_scores.append(rmse(preds, y_test))
+            total_preds.append(preds.reshape(-1,1))
 
-        return app_scores
+        return app_scores, np.hstack(total_preds)
 
     def fit_multitask_model(self, model):
 
-        y_train = np.hstack([train_targets[app].values.reshape(-1,1) for app in apps])
-        y_test = np.hstack([test_targets[app].values.reshape(-1,1) for app in apps])
+        y_train = np.hstack([self.train_targets[app].values.reshape(-1,1) for app in self.apps])
+        y_test = np.hstack([self.test_targets[app].values.reshape(-1,1) for app in self.apps])
 
-        model.fit(X_train, y_train)
-        preds = model.predict(X_test)
+        model.fit(self.X_train, y_train)
+        preds = model.predict(self.X_test)
 
         app_scores = []
         for i in range(len(self.apps)):
             app_scores.append(rmse(preds[:,i], y_test[:,i]))
 
-        return app_scores
+        return app_scores, preds
 
 
 
@@ -103,28 +121,49 @@ def rmse(pred, target):
     return np.sqrt(np.mean((pred - target)**2))
 
 
+def visuals(preds, index, apps, truth):
+    output = pd.DataFrame(preds, index=index)
+    output.columns = apps
+
+    f = ts_plot(truth, output, apps)
+    plt.show()
+
+    f2 = piechart(truth, output, apps)
+    plt.show()
+
 
 def main():
     house_id = 1
     AR_terms = 48
 
     rmd = RegressionModeler(house_id, AR_terms)
-    rmd.prepare_train_test_sets()
+    rmd.prepare_train_test_sets(targ='aggregate')
 
-    model = LinearRegression()
-    rmd.fit_model(model)
 
-    model = ElasticNetCV()
-    rmd.fit_model(model)
+    # model = LinearRegression()
+    # _, preds = rmd.fit_model(model)
+    # visuals(preds, rmd.index, rmd.apps, rmd.truth)
+    #
+    # model = ElasticNetCV()
+    # _, preds = rmd.fit_model(model)
+    # visuals(preds, rmd.index, rmd.apps, rmd.truth)
+    #
+    #
+    # model = RandomForestRegressor()
+    # _, preds = rmd.fit_model(model)
+    # visuals(preds, rmd.index, rmd.apps, rmd.truth)
 
-    model = RandomForestRegressor()
-    rmd.fit_model(model)
 
-    model = SVR()
-    rmd.fit_model(model)
-
+    # # model = SVR()
+    # # _, preds = rmd.fit_model(model)
+    # #
     model = MultiTaskElasticNetCV()
-    rmd.fit_multitask_model(model)
+    _, preds = rmd.fit_multitask_model(model)
+    visuals(preds, rmd.index, rmd.apps, rmd.truth)
 
 
+    # print(output.head(20))
 
+
+if __name__ == '__main__':
+    main()
