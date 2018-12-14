@@ -38,6 +38,13 @@ class SparseCoding(object):
         plt.subplots_adjust(0.08, 0.02, 0.92, 0.85, 0.08, 0.23)
 
 
+    def _init(self):
+        a = np.random.random((self.n,self.m))
+        b = np.random.random((self.T,self.n))
+        b /= sum(b)
+        return a,b
+
+
     def init_weights(self, X_mat):
         B, A , recon = [], [], []
         for app in X_mat:
@@ -55,47 +62,57 @@ class SparseCoding(object):
         return A, B, recon
 
 
+    def DiscriminativeDisaggregation(self, appliances, B, A):
+
+        x = np.array([appliances[app] for app in appliances])
+        x = x.T
+
+        A_star = np.vstack(A)
+        B_cat = np.hstack(B)
+        change = 1
+        t = 0
+
+        print(A_star.shape)
+        print(B_cat.shape)
+
+        while t <= self.steps and self.epsilon <= change:
+            B_cat_p = B_cat
+            acts = self.F(x, B_cat, A=A_star)
+            B_cat = (B_cat - self.alpha * ((x - B_cat.dot(acts)).dot(acts.T) - (x - B_cat.dot(A_star)).dot(A_star.T)))
+            B_cat = self._pos_constraint(B_cat)
+            B_cat /= sum(B_cat)
+
+            t += 1
+            change = np.linalg.norm(B_cat - B_cat_p)
+            print("Change is {} and step is {} ".format(change, t))
+
+        return B_cat
 
 
-        # transform_algorithms = [
-        #     ('Orthogonal Matching Pursuit\n1 atom', 'omp',
-        #      {'transform_n_nonzero_coefs': 1}),
-        #     ('Orthogonal Matching Pursuit\n2 atoms', 'omp',
-        #      {'transform_n_nonzero_coefs': 2}),
-        #     ('Least-angle regression\n5 atoms', 'lars',
-        # ]
-        #
-        # reconstructions = {}
-        # for title, transform_algorithm, kwargs in transform_algorithms:
-        #     print(title + '...')
-        #     reconstructions[title] = .copy()
-        #     t0 = time()
-        #     dico.set_params(transform_algorithm=transform_algorithm, **kwargs)
-        #     code = dico.transform(data)
-        #     patches = np.dot(code, V)
-        #
-        #     patches += intercept
-        #     patches = patches.reshape(len(data), *patch_size)
-        #     if transform_algorithm == 'threshold':
-        #         patches -= patches.min()
-        #         patches /= patches.max()
-        #     reconstructions[title][:, width // 2:] = reconstruct_from_patches_2d(
-        #         patches, (height, width // 2))
-        #     dt = time() - t0
-        #     print('done in %.2fs.' % dt)
-        #     show_with_diff(reconstructions[title], face,
-        #                    title + ' (time: %.1fs)' % dt)
-        #
-        # plt.show()
+    def F(self,x,B,x_train=None,A=None,rp_tep=False,rp_gl=False):
+        B = np.asarray(B)
+        A = np.asarray(A)
+        coder = SparseCoder(dictionary=B.T, transform_alpha=self.rp,transform_algorithm='lasso_cd')
 
+        comps, acts = librosa.decompose.decompose(x,transformer=coder)
+        acts = self._pos_constraint(acts)
+        return acts
 
-def discr_training(app_matrix, A, B):
-    pass
+    def predict(self,A,B):
+        print(A.shape)
+        print(B.shape)
+
+        return B.dot(A)
+
 
 def train(app_matrix, net):
     A, B, recon = net.init_weights(app_matrix)
+    dictionary = net.DiscriminativeDisaggregation(app_matrix, B, A)
+    x = np.array([app_matrix[app] for app in app_matrix])
+    acts = net.F(x.T, B_cat)
+    preds = net.predict(acts, B_cat)
 
-
+    visualize_piechart(preds, x, app_matrix)
 
 
 
@@ -111,14 +128,3 @@ net = SparseCoding(n = 10)
 app_matrix = { app : train_data[app].values for app in apps }
 
 train(app_matrix, net)
-
-
-
-
-
-
-# X_train, y_train = train_data.drop('main', axis=1), train_data.main
-# X_dev, y_dev = dev_data.drop('main', axis=1), dev_data.main
-#
-# sc = SparseCoding()
-# sc.fit(X_train, y_train)
