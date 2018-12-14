@@ -21,7 +21,6 @@ def main():
     X_train, y_train = train_data.drop('main', axis=1), train_data.main
     X_dev, y_dev = dev_data.drop('main', axis=1), dev_data.main
 
-
     sc = SparseCoding()
     sc.fit(X_train, y_train)
 
