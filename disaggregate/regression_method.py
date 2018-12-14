@@ -25,7 +25,7 @@ class RegressionModeler(object):
 
     def prepare_train_test_sets(self):
 
-        house_data = pd.read_csv(os.path.join(REDD_DIR, 'building_{0}.csv'.format(house_id)))
+        house_data = pd.read_csv(os.path.join(REDD_DIR, 'building_{0}.csv'.format(self.house_id)))
         house_data = house_data.set_index(pd.DatetimeIndex(house_data['time'])).drop('time', axis=1)
 
         apps = house_data.columns.values
@@ -36,30 +36,30 @@ class RegressionModeler(object):
 
         # construct X_train predictor matrix using autoregressive terms
         ar_list = []
-        for i in range(AR_terms + 1):
+        for i in range(self.AR_terms + 1):
             ar_list.append(train_data.Main.shift(i))
 
         X_train = pd.concat(ar_list, axis=1)
-        X_train.columns = ['Main'] + ['AR{0}'.format(x) for x in range(1, AR_terms+1)]
-        X_train = X_train[AR_terms:]
+        X_train.columns = ['Main'] + ['AR{0}'.format(x) for x in range(1, self.AR_terms+1)]
+        X_train = X_train[self.AR_terms:]
 
         # construct X_test predictor matrix using autoregressive terms
         ar_list = []
-        for i in range(AR_terms + 1):
+        for i in range(self.AR_terms + 1):
             ar_list.append(test_data.Main.shift(i))
 
         X_test = pd.concat(ar_list, axis=1)
-        X_test.columns = ['Main'] + ['AR{0}'.format(x) for x in range(1, AR_terms+1)]
-        X_test = X_test[AR_terms:]
+        X_test.columns = ['Main'] + ['AR{0}'.format(x) for x in range(1, self.AR_terms+1)]
+        X_test = X_test[self.AR_terms:]
 
 
         # construct target variables. Because of autoregression 'cost', must throw
-        # out AR_terms rows of the data
+        # out self.AR_terms rows of the data
         train_targets = {}
         test_targets = {}
         for item in apps:
-            train_targets[item] = train_data[item][AR_terms:]
-            test_targets[item] = test_data[item][AR_terms:]
+            train_targets[item] = train_data[item][self.AR_terms:]
+            test_targets[item] = test_data[item][self.AR_terms:]
 
         self.X_train = X_train
         self.X_test = X_test
@@ -112,19 +112,19 @@ def main():
     rmd.prepare_train_test_sets()
 
     model = LinearRegression()
-    rmd.fit_model(model)
+    print(rmd.fit_model(model))
 
     model = ElasticNetCV()
-    rmd.fit_model(model)
+    print(rmd.fit_model(model))
 
     model = RandomForestRegressor()
-    rmd.fit_model(model)
+    print(rmd.fit_model(model))
 
     model = SVR()
-    rmd.fit_model(model)
+    print(rmd.fit_model(model))
 
     model = MultiTaskElasticNetCV()
-    rmd.fit_multitask_model(model)
+    print(rmd.fit_multitask_model(model))
 
-
-
+if __name__ == '__main__':
+    main()

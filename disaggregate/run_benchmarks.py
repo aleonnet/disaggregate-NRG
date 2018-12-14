@@ -15,7 +15,7 @@ from visualize_time_series import ts_plot, piechart
 
 
 
-house_id = 3
+house_id = 1
 def benchmarks(house_id):
 
     redd_train = DataSet(REDD_FILE)
@@ -156,7 +156,7 @@ def predict(clf, test_elec, sample_period, timezone):
 
 def main():
 
-    for house_id in range(3,7):
+    for house_id in range(1,7):
         alltruth, allpreds = benchmarks(house_id)
 
         visualize_benchmarks(alltruth['CO'], allpreds['CO'], restriction='time')
