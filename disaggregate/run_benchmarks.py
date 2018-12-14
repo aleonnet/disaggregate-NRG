@@ -14,8 +14,12 @@ from utils import number_list_duplicates
 from visualize_time_series import ts_plot, piechart
 
 
-
 house_id = 1
+
+<<<<<<< HEAD
+house_id = 1
+=======
+>>>>>>> aef264f3ffe1171080a897c5ccc7ad180010cc49
 def benchmarks(house_id):
 
     redd_train = DataSet(REDD_FILE)
@@ -156,11 +160,16 @@ def predict(clf, test_elec, sample_period, timezone):
 
 def main():
 
+<<<<<<< HEAD
     for house_id in range(1,7):
         alltruth, allpreds = benchmarks(house_id)
+=======
+    house_id = 1
+    alltruth, allpreds = benchmarks(house_id)
+>>>>>>> aef264f3ffe1171080a897c5ccc7ad180010cc49
 
-        visualize_benchmarks(alltruth['CO'], allpreds['CO'], restriction='time')
-        visualize_benchmarks(alltruth['FHMM'], allpreds['FHMM'], restriction='time')
+    visualize_benchmarks(alltruth['CO'], allpreds['CO'], restriction='time')
+    visualize_benchmarks(alltruth['FHMM'], allpreds['FHMM'], restriction='time')
 
 
 if __name__ == '__main__':

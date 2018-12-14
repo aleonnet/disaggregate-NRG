@@ -50,7 +50,7 @@ def load_data(restriction='time'):
 
 
     if TESTING:
-        # without real predictions I test on fake predictions
+        # for testing the plotting functions I generate fake predictions
         fake_predictions = truth_data + truth_data * 0.7 + 40 * np.random.randn(*truth_data.shape)
         pred_data = fake_predictions
 
@@ -78,7 +78,7 @@ def load_data(restriction='time'):
     return eval_truth, eval_pred, devices
 
 
-def ts_plot(eval_truth, eval_pred, devices):
+def ts_plot(eval_truth, eval_pred, devices, save=None):
 
     fig, ax = plt.subplots(len(devices) + 1, 1, sharex=True)
 
@@ -98,16 +98,19 @@ def ts_plot(eval_truth, eval_pred, devices):
     for j in range(len(devices) + 1):
         ax[j].spines['top'].set_visible(False)
         ax[j].spines['right'].set_visible(False)
-
+        ax[j].tick_params(axis='x', length=0, rotation=30, labelsize=9)
     ax[0].legend(handles=[tr,pr])
 
     fig.align_ylabels(ax)
 
+    if save is not None:
+        fig.set_size_inches(8, 8)
+        fig.savefig('../output/{0}.png'.format(save), format='png')
     return fig
 
 
 
-def piechart(eval_truth, eval_pred, devices):
+def piechart(eval_truth, eval_pred, devices, save=None):
 
     # drop main column if it exists
     try:
@@ -148,7 +151,9 @@ def piechart(eval_truth, eval_pred, devices):
     centre_circle = plt.Circle((0,0),0.6,fc='white')
     ax2.add_artist(centre_circle)
 
-
+    if save is not None:
+        pie.set_size_inches(6, 5)
+        pie.savefig('../output/{0}_pie.png'.format(save), format='png')
     # pie.set_size_inches(4.5, 8)
     # pie.savefig('pie1.png', dpi=300)
     return pie

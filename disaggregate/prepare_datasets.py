@@ -15,7 +15,11 @@ def main():
 
     # if not isfile(REDD_FILE):
         # convert raw data into hd5 file
+<<<<<<< HEAD
     convert_redd(join(REDD_DIR, 'low_freq'), REDD_FILE)
+=======
+        convert_redd(join(REDD_DIR, 'low_freq'), REDD_FILE)
+>>>>>>> aef264f3ffe1171080a897c5ccc7ad180010cc49
 
     redd = DataSet(REDD_FILE)
 
@@ -44,8 +48,13 @@ def main():
         appliance_labels = [m.label() for m in truth_df.columns.values]
         fixed_appliance_labels = number_list_duplicates(appliance_labels)
         truth_df.columns = fixed_appliance_labels
+<<<<<<< HEAD
         # truth_df['Main'] = mains
         truth_df['Main'] = np.sum(truth_df.values, axis=1)
+=======
+        truth_df['Main'] = mains
+        # truth_df['Main'] = np.sum(truth_df.values, axis=1)
+>>>>>>> aef264f3ffe1171080a897c5ccc7ad180010cc49
 
         truth_df.to_csv(join(REDD_DIR,
                     'building_{0}.csv'.format(id)), index_label='time')
